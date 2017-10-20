@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>chat</title>
+    <style>
+      .chat_log{ width: 95%; height: 200px; }
+      .name{ width: 10%; }
+      .message{ width: 70%; }
+      .chat{ width: 10%; }
+    </style>
+  </head>
+  <body>
+  
+    <div>
+      <textarea id="chatLog" class="chat_log" readonly></textarea>
+    </div>
+    
+    <textarea id="debug1" class="chat_log" readonly></textarea>
+    
+    
+    <form id="chat" >
+      <input id="name" class="name" type="text" readonly>
+      <input id="message" class="message" type="text">
+      <input type="submit" class="chat" value="chat"/>
+    </form>
+    <div id="box" class="box"></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="//code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+   
+	   var socket = null;
+	   var name = 'jin';
+	   var room = '100';
+    
+//		function chatFrmAction(){
+//			socket.emit('send message', $('#name').val(), $('#message').val());
+//	        $('#message').val("");
+//	        $("#message").focus();
+//	        e.preventDefault();
+//		}
+
+
+	
+	
+	function phpPageAction(){
+		var url = "http://211.238.132.150/dg_test/json_result_test.php";
+		var param = "msg=" + $('#message').val() + "&user_name=" + $('#name').val();
+		$.ajax({
+		    type :"post",
+		    cache : false,
+		    async: false,  //프로그래스바 표시를 위해 동기로 보낸다. 
+		    data : param,
+		    dataType : 'json',
+		    url  : url,
+		    success : function (data) {
+		    	setDebug("phpPageAction]", "msg = " +  data['msg']);
+		    },
+		    error : function (xhr, textStatus) {
+		    	alert(xhr + "error = " + textStatus);
+		    }
+		});
+		
+		
+		/* jsonp 사용하기 */
+		/*
+		var url = "http://211.238.132.150/dg_test/json_result_test.php";
+		var param = "msg=" + $('#message').val() + "&user_name=" + $('#name').val();
+		$.ajax({
+		    type :"get",
+		    cache : false,
+		    async: false,  //프로그래스바 표시를 위해 동기로 보낸다. 
+		    data : param,
+		    dataType : 'jsonp',
+		    jsonp : "callback2",
+		    url  : url,
+		    success : function (data) {
+		    	$('#debug1').append("msg = " +  data['msg']+"\n");
+		    },
+		    error : function (xhr, textStatus) {
+		    	alert(xhr + "error = " + textStatus);
+		    }
+		});
+		*/
+	}
+	
+	function setDebug(whereis, msg){
+		$('#debug1').append("[" + whereis + "] " + msg+"\n");
+	}
+	
+	function writeMessage(msg){
+		$('#chatLog').append(msg+"\n");
+		$('#chatLog').scrollTop($('#chatLog')[0].scrollHeight);
+	}
+    
+	$(document).ready(function() {
+		 socket = io();
+
+		socket.on('change name', function(name){
+			$('#name').val(name);
+		});
+		 
+		 socket.on('connection', function(data) {
+			setDebug("conntion", "start");
+            if(data.type === 'connected') {
+                socket.emit('connection', {
+                    type : 'join',
+                    name : name,
+                    room : room
+                });
+            }
+        });
+		 
+		socket.on('system', function(data) {
+			writeMessage(data.message);
+		});
+	 
+	 
+		 
+		$('#chat').on('submit', function(e){
+			socket.emit('send message', $('#name').val(), $('#message').val());
+			phpPageAction();
+			$('#message').val("");
+			$("#message").focus();
+			e.preventDefault();
+
+		});
+		
+		socket.on('receive message', function(msg) {
+			
+			writeMessage(msg);
+		});
+		
+		/*
+		socket.on('receive message', function(msg){
+			setDebug("receive message", "aaaa");
+			writeMessage(msg);
+			
+		});
+		*/
+		
+	});
+  
+    </script>
+  </body>
+</html>
